@@ -1,0 +1,18 @@
+{
+  "benchmark": "./module-report/module-report/module-report/custom_templates/benchmark.ftlh",
+  "breakdown": "./module-report/module-report/module-report/custom_templates/breakdown.ftlh",
+  "consolidated": "./module-report/module-report/module-report/custom_templates/consolidated.ftlh",
+  "coverage": "./module-report/module-report/module-report/custom_templates/coverage.ftlh",
+  "detailed": "./module-report/module-report/module-report/custom_templates/detailed.ftlh",
+  "feature_map": "./module-report/module-report/module-report/custom_templates/feature_map.ftlh",
+  "feature_overview": "./module-report/module-report/module-report/custom_templates/feature_overview.ftlh",
+  "known_errors": "./module-report/module-report/module-report/custom_templates/known_errors.ftlh",
+  "overview": "./module-report/module-report/module-report/custom_templates/overview.ftlh",
+  "overview_chart": "./module-report/module-report/module-report/custom_templates/overview_chart.ftlh",
+  "pie_chart": "./module-report/module-report/module-report/custom_templates/pie_chart.ftlh",
+  "retrospective": "./module-report/module-report/module-report/custom_templates/retrospective.ftlh",
+  "system_info": "./module-report/module-report/module-report/custom_templates/system_info.ftlh",
+  "tables": "./module-report/module-report/module-report/custom_templates/tables.ftlh",
+  "usage": "./module-report/module-report/module-report/custom_templates/usage.ftlh",
+  "logo": "./module-report/module-report/module-report/custom_templates/lh-logo-crane-typo.png"
+}
