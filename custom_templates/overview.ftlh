@@ -216,7 +216,7 @@
 <table>
 	<tr><th>Release name</th><th>Test execution date</th><th>Environment</th><th>Component</th></tr>
 		<td class="features_known" >LHG-LMS</td>
-		<td class="features_known" >2025-06-12T15:24:00.0333829</td>
+		<td class="features_known" >2025-06-23T12:20:12.3958368</td>
 		<td class="features_known" >stage</td>
 		<td class="features_known" >LHG-LMS</td>
 	</tr>    

@@ -1,7 +1,9 @@
-package com.lh.core.library;
+package com.lh.core.report;
 
 import com.lh.core.page.ScormData;
 import com.microsoft.playwright.Page;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -11,6 +13,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SCORMReport {
+    private static final Logger logger = LogManager.getLogger(SCORMReport.class);
     private static Page page;
     public static void generateHtmlReport(ScormData data) {
         try {
@@ -19,7 +22,7 @@ public class SCORMReport {
             File reportFolder = new File(reportFolderName);
             if (!reportFolder.exists()) {
                 reportFolder.mkdir();
-                System.out.println("Created folder: " + reportFolder.getAbsolutePath());
+                logger.info("Created folder: " + reportFolder.getAbsolutePath());
             }
 
             // Step 2: Generate filename with timestamp
@@ -62,7 +65,7 @@ public class SCORMReport {
                 writer.println("</table></body></html>");
             }
 
-            System.out.println("SCORM report saved at: " + reportFile.getAbsolutePath());
+            logger.info("SCORM report saved at: " + reportFile.getAbsolutePath());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,10 +78,10 @@ public class SCORMReport {
                     "}");
             Boolean finished = (result instanceof Boolean) ? (Boolean) result : false;
             if (!finished) {
-                System.out.println("Warning: Failed to properly terminate SCORM session");
+                logger.info("Warning: Failed to properly terminate SCORM session");
             }
         } catch (Exception e) {
-            System.out.println("Error terminating SCORM session: " + e.getMessage());
+            logger.error("Error terminating SCORM session: " + e.getMessage());
         }
     }
 }
