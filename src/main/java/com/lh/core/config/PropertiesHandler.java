@@ -39,23 +39,4 @@ public class PropertiesHandler {
 
         return path;
     }
-
-    public static String getHtmlReportsFolder() {
-        return getProperty("path_report_html");
-    }
-
-    public static String getZipReportsFolder() {
-        String path = getProperty("path_report_zip");
-        File fileToZip = new File(path);
-        if (!fileToZip.exists()) {
-            fileToZip.mkdir();
-        }
-
-        return path;
-    }
-
-    public static boolean isLoggerActivated() {
-        return getProperty("logger").toLowerCase().contains("y");
-    }
-
 }

@@ -19,11 +19,12 @@ public class ExtentManager {
 			String fileName = "Report.html";
 			String folderName;
 			Date d = new Date();
-			if ((Configurations.RunOnBrowserStack).equals("Y")) {
-				folderName = d.toString().replace(":", "_") + "_" + System.getProperty("browser");
-			} else {
-				folderName = d.toString().replace(":", "_") + "_chrome";
-			}
+//			if ((Configurations.RunOnBrowserStack).equals("Y")) {
+//				folderName = d.toString().replace(":", "_") + "_" + System.getProperty("browser");
+//			} else {
+//				folderName = d.toString().replace(":", "_") + "_chrome";
+//			}
+			folderName = d.toString().replace(":", "_") + "_" + System.getProperty("browser");
 			// directory of the report folder
 			new File(reportPath + folderName + "/screenshots").mkdirs();
 

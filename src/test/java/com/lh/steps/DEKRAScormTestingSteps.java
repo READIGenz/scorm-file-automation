@@ -94,7 +94,7 @@ public class DEKRAScormTestingSteps extends BasePage{
     }
 
     @Then("The user completes the course")
-    public void theUserCompletedTheCourse() {
+    public void theUserCompletedTheCourse() throws IOException {
         scormTestingPage.navigateThroughSCORM();
     }
 

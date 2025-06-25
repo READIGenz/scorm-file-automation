@@ -6,6 +6,11 @@ import com.lh.core.utils.McqAnswerLoader;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.io.File;
+import java.io.IOException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -162,7 +167,7 @@ public class DEKRAScormTestingPage extends BasePage{
         try {
             nextButton.click();
             logger.info("Clicked Next button once.");
-            page.waitForLoadState();
+            page.waitForTimeout(2000);
             setVideoPlaybackSpeed(videoElement, 16.0);
         } catch (PlaywrightException e) {
             logger.error("Click error: " + e.getMessage());
@@ -176,7 +181,7 @@ public class DEKRAScormTestingPage extends BasePage{
         }
     }
 
-    public void navigateThroughSCORM() {
+    public void navigateThroughSCORM() throws IOException {
         FrameLocator frame = getFrameLocator();
         Locator nextButton = getNextButtonLocator(frame);
         Locator videoElement = getVideoElementLocator(frame);
@@ -184,7 +189,7 @@ public class DEKRAScormTestingPage extends BasePage{
         int totalClicks = 0;
 
         startTheSCORM(frame);
-        page.waitForLoadState();
+        page.waitForTimeout(2000);
         setVideoPlaybackSpeed(videoElement, 16.0);
 
         while (true) {
@@ -193,7 +198,7 @@ public class DEKRAScormTestingPage extends BasePage{
                 break;
             }
 
-            if (!waitForVisibility(nextButton, 30)) {
+            if (!waitForVisibility(nextButton, 60)) {
                 logger.info("Next button not found in time.");
                 break;
             }
@@ -209,6 +214,7 @@ public class DEKRAScormTestingPage extends BasePage{
                 logger.error("Click error: " + e.getMessage());
                 break;
             }
+            dragAndDrop(frame);
             clickAllVisibleVideoButtons(frame);
             answerMcqsIfPresent(frame);
         }
@@ -216,6 +222,84 @@ public class DEKRAScormTestingPage extends BasePage{
         logger.info("Flow complete. Total Next clicks: " + totalClicks);
         page.waitForTimeout(2000);
         scormTesting();
+    }
+
+    public static void dragAndDrop(FrameLocator frameLocator) throws IOException {
+        Locator richtig = frameLocator.locator("//div[@id='column-1']");
+        Locator falsch = frameLocator.locator("//div[@id='column-2']");
+
+        // Check visibility before proceeding
+        if (!richtig.isVisible() || !falsch.isVisible()) {
+            logger.warn("Drop zones not visible. Skipping drag-and-drop.");
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(new File("src/test/java/com/lh/testdata/mcq-answers.json"));
+
+        String currentCourse = root.get("currentCourse").asText();
+
+        for (int i = 1; i <= 20; i++) {
+            String questionKey = currentCourse + "_Q" + i;
+            JsonNode answerSet = root.get(questionKey);
+
+            if (answerSet == null) {
+                continue; // No data for this question
+            }
+
+            JsonNode richtigAnswers = answerSet.get("richtig");
+            JsonNode falschAnswers = answerSet.get("falsch");
+
+            // Peek into the first available option to detect if question is active
+            if (richtigAnswers != null && !richtigAnswers.isEmpty()) {
+                String previewText = richtigAnswers.get(0).asText();
+                Locator previewOption = frameLocator.locator("//div[contains(text(),\"" + previewText + "\")]");
+
+                if (!previewOption.isVisible()) {
+                    continue; // This question is not visible
+                }
+
+                logger.info("Drag-and-drop question " + i + " found. Performing actions...");
+
+                // Drag richtig
+                for (JsonNode answerNode : richtigAnswers) {
+                    String text = answerNode.asText();
+                    Locator option = frameLocator.locator("//div[contains(text(),\"" + text + "\")]");
+                    if (option.isVisible()) {
+                        option.dragTo(richtig);
+                        logger.info("Dragged to Richtig: " + text);
+                    } else {
+                        logger.warn("Richtig option not found or not visible: " + text);
+                    }
+                }
+
+                // Drag falsch
+                if (falschAnswers != null) {
+                    for (JsonNode answerNode : falschAnswers) {
+                        String text = answerNode.asText();
+                        Locator option = frameLocator.locator("//div[contains(text(),\"" + text + "\")]");
+                        if (option.isVisible()) {
+                            option.dragTo(falsch);
+                            logger.info("Dragged to Falsch: " + text);
+                        } else {
+                            logger.warn("Falsch option not found or not visible: " + text);
+                        }
+                    }
+                }
+
+                // Click check button
+                Locator checkButton = frameLocator.locator("//div[@class='drag-n-drop-check-button wbt-button']");
+                if (checkButton.isVisible()) {
+                    checkButton.click();
+                    logger.info("Clicked check button for question " + i);
+                }
+                Locator nextQuestion = frameLocator.locator("//div[contains(@class, 'message-box-next-question-button') and contains(text(), 'Nächste Frage')]");
+                if (nextQuestion.isVisible()){
+                    nextQuestion.click();
+                    logger.info("Next Question button clicked");
+                }
+            }
+        }
     }
 
     public static void answerMcqsIfPresent(FrameLocator frame) {
@@ -266,10 +350,10 @@ public class DEKRAScormTestingPage extends BasePage{
         if(page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='message-box-next-question-button wbt-button']").isVisible()) {
             page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='message-box-next-question-button wbt-button']").click();
         }
-         else if (page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='frage-next-button wbt-button']").isVisible()){
+        else if (page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='frage-next-button wbt-button']").isVisible()){
             page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='frage-next-button wbt-button']").click();
         }
-         else {
+        else {
             logger.info("No matching button was found.");
         }
     }
@@ -423,17 +507,17 @@ public class DEKRAScormTestingPage extends BasePage{
 
         ScormData data = new ScormData();
 
-            data.version = page.evaluate("() => typeof API_1484_11 !== 'undefined' ? 'SCORM 2004' : (typeof API !== 'undefined' ? 'SCORM 1.2' : 'Unknown')").toString();
-            data.studentId = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_id') || 'Not Found'").toString();
-            data.studentName = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_name') || 'Not Found'").toString();
-            data.objectivesCount = page.evaluate("() => API?.LMSGetValue?.('cmi.objectives._count') || 'Not Found'").toString();
-            data.audioPref = page.evaluate("() => API?.LMSGetValue?.('cmi.student_preference.audio') || 'Not Found'").toString();
-            data.lessonLocation = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_location') || 'Not Found'").toString();
-            data.lessonStatus = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_status') || 'Not Found'").toString();
-            data.lessonMode = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_mode') || 'Not Found'").toString();
-            data.sessionTime = page.evaluate("() => API?.LMSGetValue?.('cmi.core.session_time') || 'Not Found'").toString();
-            data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
-            data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
+        data.version = page.evaluate("() => typeof API_1484_11 !== 'undefined' ? 'SCORM 2004' : (typeof API !== 'undefined' ? 'SCORM 1.2' : 'Unknown')").toString();
+        data.studentId = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_id') || 'Not Found'").toString();
+        data.studentName = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_name') || 'Not Found'").toString();
+        data.objectivesCount = page.evaluate("() => API?.LMSGetValue?.('cmi.objectives._count') || 'Not Found'").toString();
+        data.audioPref = page.evaluate("() => API?.LMSGetValue?.('cmi.student_preference.audio') || 'Not Found'").toString();
+        data.lessonLocation = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_location') || 'Not Found'").toString();
+        data.lessonStatus = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_status') || 'Not Found'").toString();
+        data.lessonMode = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_mode') || 'Not Found'").toString();
+        data.sessionTime = page.evaluate("() => API?.LMSGetValue?.('cmi.core.session_time') || 'Not Found'").toString();
+        data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
+        data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
 
         generateHtmlReport(data);
         logger.info("SCORM report generated successfully.");
