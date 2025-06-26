@@ -59,9 +59,9 @@ public class SCORMReport {
                 writer.printf("<tr><td>Lesson Location</td><td>%s</td><td>The last known location the student visited in the course.</td></tr>%n", data.lessonLocation);
                 writer.printf("<tr><td>Lesson Status</td><td>%s</td><td>Shows if the student has completed the lesson (e.g., completed, incomplete, not attempted).</td></tr>%n", data.lessonStatus);
                 writer.printf("<tr><td>Lesson Mode</td><td>%s</td><td>Indicates the mode (e.g., normal, review, browse) the course is being accessed in.</td></tr>%n", data.lessonMode);
-                writer.printf("<tr><td>Session Time</td><td>%s</td><td>Total time the student has spent in the current session.</td></tr>%n", data.sessionTime);
-                writer.printf("<tr><td>Suspend Data</td><td>%s</td><td>Saved state information used to resume the course (e.g., last visited slide, completed sections).</td></tr>%n", data.suspendData);
-                writer.printf("<tr><td>Score</td><td>%s</td><td>Displays the score (if available).</td></tr>%n", data.rawScore);
+//                writer.printf("<tr><td>Session Time</td><td>%s</td><td>Total time the student has spent in the current session.</td></tr>%n", data.sessionTime);
+//                writer.printf("<tr><td>Suspend Data</td><td>%s</td><td>Saved state information used to resume the course (e.g., last visited slide, completed sections).</td></tr>%n", data.suspendData);
+//                writer.printf("<tr><td>Score</td><td>%s</td><td>Displays the score (if available).</td></tr>%n", data.rawScore);
                 writer.println("</table></body></html>");
             }
 

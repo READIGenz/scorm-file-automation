@@ -515,9 +515,9 @@ public class DEKRAScormTestingPage extends BasePage{
         data.lessonLocation = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_location') || 'Not Found'").toString();
         data.lessonStatus = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_status') || 'Not Found'").toString();
         data.lessonMode = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_mode') || 'Not Found'").toString();
-        data.sessionTime = page.evaluate("() => API?.LMSGetValue?.('cmi.core.session_time') || 'Not Found'").toString();
-        data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
-        data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
+//        data.sessionTime = page.evaluate("() => API?.LMSGetValue?.('cmi.core.session_time') || 'Not Found'").toString();
+//        data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
+//        data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
 
         generateHtmlReport(data);
         logger.info("SCORM report generated successfully.");
