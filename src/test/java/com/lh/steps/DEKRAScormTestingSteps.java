@@ -16,7 +16,6 @@ public class DEKRAScormTestingSteps extends BasePage{
 
     @Given("The user launches LHG-LMS url")
     public void userLaunchesLMSurl() throws IOException, InterruptedException {
-//        launchBrowser(Configurations.LHG_LMS_URL);
         try {
             launchBrowser(Configurations.LHG_LMS_URL);
         } catch (Exception e) {
@@ -24,27 +23,22 @@ public class DEKRAScormTestingSteps extends BasePage{
         }
     }
 
-    @And("The user enters the credentials")
-    public void theUserEntersTheCredentials() throws IOException, InterruptedException {
-        scormTestingPage.enterCredentials();
-    }
-
-    @And("The user enters {string} in {string}")
-    public void theUserEnters(String IDField, String locator) throws InterruptedException {
+    @And("The user performs login as a learner")
+    public void theUserPerformsLoginAsLearner() throws IOException, InterruptedException {
         try {
-            scormTestingPage.verifyAndEnterText(IDField, locator);
-        } catch (Exception e) {
-            logAssert_Fail("Error entering the text" + e.getMessage());
-        }
-    }
-
-    @And("The user clicks on the {string}")
-    public void theUserClicksOnTheButton(String locator) throws InterruptedException {
-        try {
-            scormTestingPage.clicks(locator);
-            page.waitForLoadState();
+            scormTestingPage.loginAsLearner();
         } catch (Exception e){
-            logAssert_Fail("Error clicking on the button!" + e.getMessage() );
+            logAssert_Fail("Error in login due to: " + e.getMessage());
+        }
+
+    }
+
+    @And("The user navigates to the SCORM")
+    public void theUserNavigatesToTheSCORM() throws InterruptedException {
+        try {
+            scormTestingPage.navigatesTillSCORM();
+        } catch (Exception e) {
+            logAssert_Fail("Error due to " + e.getMessage());
         }
     }
 
@@ -60,7 +54,7 @@ public class DEKRAScormTestingSteps extends BasePage{
     @And("The user starts the course")
     public void theUserStartsTheCourse() throws InterruptedException {
         try{
-            scormTestingPage.clickOnFrame();
+            scormTestingPage.userStartsTheCourse();
         } catch (Exception e){
             logAssert_Fail("Error in starting the SCORM" + e.getMessage());
         }
@@ -69,7 +63,7 @@ public class DEKRAScormTestingSteps extends BasePage{
     @Then("The user verifies that the table of contents and progress bar is visible")
     public void theUserVerifiesThatTheTableOfContentsIsVisible() throws InterruptedException {
         try {
-            scormTestingPage.tableOfContentVisibility();
+            scormTestingPage.tableOfContentAndProgressVisibility();
         } catch (Exception e){
             logAssert_Fail("Table of Contents is not visible" + e.getMessage());
         }
@@ -94,9 +88,10 @@ public class DEKRAScormTestingSteps extends BasePage{
     }
 
     @Then("The user completes the course")
-    public void theUserCompletedTheCourse() throws IOException {
+    public void theUserCompletedTheCourse() throws IOException, InterruptedException {
         scormTestingPage.navigateThroughSCORM();
     }
+
 
 
 }

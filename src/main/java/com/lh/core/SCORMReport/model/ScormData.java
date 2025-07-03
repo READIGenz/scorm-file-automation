@@ -1,4 +1,4 @@
-package com.lh.core.page;
+package com.lh.core.SCORMReport.model;
 
 // ScormData.java
 public class ScormData {

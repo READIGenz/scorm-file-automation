@@ -1,5 +1,10 @@
 package com.lh.core.page;
 
+import com.lh.core.SCORMReport.FileWriterService;
+import com.lh.core.SCORMReport.HtmlReportGenerator;
+import com.lh.core.SCORMReport.ReportGenerator;
+import com.lh.core.SCORMReport.SCORMReportService;
+import com.lh.core.SCORMReport.model.ScormData;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.FrameLocator;
 import com.lh.core.utils.McqAnswerLoader;
@@ -19,48 +24,65 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
-import static com.lh.core.report.SCORMReport.generateHtmlReport;
-
-
 
 public class DEKRAScormTestingPage extends BasePage{
     private static final Logger logger = LogManager.getLogger(DEKRAScormTestingPage.class);
-    private final HashMap<String, String> locatorMap = new HashMap<>();
-    private final HashMap<String, String> infoMap = new HashMap<>();
-
-    static String courseName = McqAnswerLoader.getCurrentCourseName();
-    String moduleLocatorKey = "Module" + courseName;
-    String locatorValue = "//div[contains(text(), '" + courseName + "')]";
     private String initialProgressText = "";
 
-    public DEKRAScormTestingPage(){
-        locatorMap.put("IDField", "//input[@id='externalForm:login']");
-        locatorMap.put("PasswordField", "//input[@id='externalForm:password']");
-        locatorMap.put("LoginButton", "//button[@id='externalForm:loginButton']");
-        locatorMap.put("MyCourses", "//span[contains(text(), 'My courses')]");
-        locatorMap.put("All courses", "//a[@id='mylearnings-all']");
-        locatorMap.put("Course", "//div[contains(text(), 'Test Factory Test AVSEC')]"); // Test Factory Test AVSEC
-        locatorMap.put("Back", "//a[@id='titleWBTBackLinkEnabled']");
-        locatorMap.put("Next", "//button[@class='navigation-arrow right highlight']");
-        locatorMap.put(moduleLocatorKey, locatorValue); // Dynamic locator for selecting the module from JSON
-        locatorMap.put("WBT", "//iframe[@id='SCO']");
-        locatorMap.put("TableOfContent", "//div[@id='outline-search-content']");
-        locatorMap.put("Start", "//img[@class='button']");
-        locatorMap.put("Resume", "//button[text()='Resume']");
+    // CONSTANTS FOR LOCATORS
+    // LOGIN PAGE
+    private static final String ID_FIELD_LOCATOR = "//input[@id='externalForm:login']";
+    private static final String PASSWORD_FIELD_LOCATOR = "//input[@id='externalForm:password']";
+    private static final String LOGIN_BTN_LOCATOR = "//button[@id='externalForm:loginButton']";
 
-        infoMap.put("IDField", "User ID Field");
-        infoMap.put("PasswordField", "User Password Field");
-        infoMap.put("LoginButton", "Login Button");
-        infoMap.put("Course", "User is on the WBT");
-        infoMap.put("Module", "User navigates to the WBT module");
-        infoMap.put("WBT", "User in on the WBT");
-        infoMap.put("TableOfContent", "Course TableOfContent");
-        infoMap.put("Start", "Course start button");
-        infoMap.put("Resume", "Resume course");
-    }
+    // SCORM NAVIGATION
+    private static final String MY_COURSES_LOCATOR = "//span[contains(text(), 'My courses')]";
+    private static final String ALL_COURSES_LOCATOR = "//a[@id='mylearnings-all']";
+    private static final String COURSE_LOCATOR = "//div[contains(text(), 'Test Factory Test AVSEC')]";
+
+    // OPENING SCORM DYNAMICALLY FROM THE JSON FILE
+    static String courseName = McqAnswerLoader.getCurrentCourseName();
+    private static final String locatorValue = "//div[contains(text(), '" + courseName + "')]";
+    
+    // USER STARTS THE COURSE
+    private static final String SCO_IFRAME_LOCATOR = "//iframe[@id='SCO']";
+    private static final String TRAINING_BEGINNEN_LOCATOR = "//div[normalize-space()='Training beginnen']";
+    private static final String MENU_ICON_LOCATOR = "//i[@class='fa fa-bars']";
+
+    // TABLE OF CONTENTS AND PROGRESS BAR
+    private static final String CONTENT_MENU_PAGE_LOCATOR = "//div[@id='content-menu-process-info-page']";
+    private static final String OVERALL_PROGRESS_LOCATOR = "//div[@id='content-menu-process-info-overall']";
+
+    // SCORM NAVIGATION
+    private static final String FIRST_CHAPTER_TITLE_LOCATOR = "//div[@class='kapitel-item-titel']";
+    private static final String ACTIVE_PAGE_ELEMENT_LOCATOR = "//div[@class='seiten-nav-container active']//div[1]//div[1]//div[3]";
+    private static final String BACK_BUTTON_LOCATOR = "//a[@id='titleWBTBackLinkEnabled']";
+    private static final String NEXT_BUTTON_LOCATOR = "//button[@class='navigation-arrow right highlight']";
+    private static final String VIDEO_ELEMENT_LOCATOR = "//video[@preload='auto']";
+    private static final String PREVIOUS_BUTTON_LOCATOR = "//button[contains(@class, 'navigation-arrow left')]";
+    private static final String COMPLETION_MESSAGE_LOCATOR = "//div[contains(text(),'Sie haben die Unterweisung')]";
+
+    // DRAG AND DROP QUESTION TYPE LOCATORS
+    private static final String RICHTIG_LOCATOR = "//div[@id='column-1']";
+    private static final String FALSCH_LOCATOR = "//div[@id='column-2']";
+    private static final String CHECK_BUTTON_LOCATOR = "//div[@class='drag-n-drop-check-button wbt-button']";
+    private static final String NEXT_QUESTION_BUTTON_LOCATOR = "//div[contains(@class, 'message-box-next-question-button') and contains(text(), 'Nächste Frage')]";
+    private static final String ANSWER_OPTION_LOCATOR_TEMPLATE = "//div[contains(text(),\"%s\")]";
+
+    // ADDITIONAL VIDEO UI LOCATORS
+    private static final String INTERACTION_BUTTON_LOCATOR_TEMPLATE = "(//div[@class='interaction-button-info'])[%d]";
+
+    // MCQ TYPE QUESTIONS LOCATORS
+    private static final String CONTAINS_LABEL_LOCATOR_TEMPLATE = "//label[contains(text(),'%s')]";
+    private static final String NORMALIZED_LABEL_LOCATOR_TEMPLATE = "//label[normalize-space()='%s']";
+    private static final String SUBMIT_BUTTON_LOCATOR = "//div[@class='frage-antwort-button wbt-button']";
+    private static final String NEXT_QUESTION_BUTTON = "//div[@class='message-box-next-question-button wbt-button']";
+    private static final String QUESTION_NEXT_BUTTON = "//div[@class='frage-next-button wbt-button']";
+
+    // SCORM API LOCATORS
+    private static final String SCO_IFRAME_SELECTOR = "#SCO";
 
     private static final Properties mcqProperties = new Properties();
-
     static {
         try (InputStreamReader reader = new InputStreamReader(
                 new FileInputStream("src/test/java/com/lh/testdata/mcq-answers.json"), StandardCharsets.UTF_8)) {
@@ -70,90 +92,96 @@ public class DEKRAScormTestingPage extends BasePage{
         }
     }
 
-    public void openSCORM() throws InterruptedException {
-        clicks(moduleLocatorKey);
-    }
-
-
-    public void verifyAndEnterText(String data, String locator) throws InterruptedException {
-        boolean status = false;
-        status = waitForElement(locatorMap.get(locator), 3000);
-        if (status == true) {
-            enterText(locatorMap.get(locator), data);
-        } else {
-            logAssert_Fail("Fails to enter text in " + infoMap.get(locator) + ". Locator is: " + locatorMap.get(locator));
-        }
-    }
-
     public void clicks(String locator) throws InterruptedException {
         try {
-            waitForElement(locatorMap.get(locator), 60000);
-            waitAndClick(locatorMap.get(locator));
+            waitForElement(locator, 60000);
+            waitAndClick(locator);
             logger.info("Successfully clicked: " + locator);
         } catch (Exception e) {
-            logAssert_Fail("Fails to select " + infoMap.get(locator) + ". Locator is: " + locatorMap.get(locator));
+            logAssert_Fail("Fails to select " + locator);
         }
     }
 
-    public void clickOnFrame() throws InterruptedException {
+    public void loginAsLearner() throws InterruptedException {
         try {
-            FrameLocator frame = page.frameLocator("//iframe[@id='SCO']");
-            page.waitForTimeout(2000);
-            page.frameLocator("//iframe[@id='SCO']").locator("//div[normalize-space()='Training beginnen']").isVisible();
-            page.frameLocator("//iframe[@id='SCO']").locator("//div[normalize-space()='Training beginnen']").click();
+            Properties props = new Properties();
+            FileInputStream fis = new FileInputStream("src/test/resources/config.properties");
+            props.load(fis);
+
+            String loginId = props.getProperty("LoginID");
+            String encodedPassword = props.getProperty("Password");
+
+            // Decode Base64 password
+            byte[] decodedBytes = Base64.getDecoder().decode(encodedPassword);
+            String password = new String(decodedBytes);
+
+            logger.info("Launching LMS with credentials");
+            clicks(ID_FIELD_LOCATOR);
+            enterText(ID_FIELD_LOCATOR, loginId);
+            clicks(PASSWORD_FIELD_LOCATOR);
+            enterText(PASSWORD_FIELD_LOCATOR, password);
+            clicks(LOGIN_BTN_LOCATOR);
+        } catch (Exception e) {
+            logAssert_Fail("Error in login due to " + e.getMessage());
+        }
+    }
+
+    public void navigatesTillSCORM() throws InterruptedException {
+        try {
+            waitAndClick(MY_COURSES_LOCATOR);
+            waitAndClick(ALL_COURSES_LOCATOR);
+            waitAndClick(COURSE_LOCATOR);
+        } catch (Exception e) {
+            logAssert_Fail("Error in navigation due to " + e.getMessage());
+        }
+
+    }
+
+    public void openSCORM() throws InterruptedException {
+        try {
+            clicks(locatorValue);
+        } catch (InterruptedException e) {
+            logAssert_Fail("Error opening the SCORM " + e.getMessage() );
+        }
+    }
+
+    public void userStartsTheCourse() throws InterruptedException {
+        try {
+            page.waitForTimeout(5000);
+            page.frameLocator(SCO_IFRAME_LOCATOR).locator(TRAINING_BEGINNEN_LOCATOR).isVisible();
+            page.frameLocator(SCO_IFRAME_LOCATOR).locator(TRAINING_BEGINNEN_LOCATOR).click();
+
             page.waitForLoadState();
-            Locator menuIcon = frame.locator("//i[@class='fa fa-bars']");
-            menuIcon.isVisible();
-            menuIcon.click();
+            page.frameLocator(SCO_IFRAME_LOCATOR).locator(MENU_ICON_LOCATOR).click();
+        } catch (Exception e) {
+            logAssert_Fail("Error in userStartsTheCourse: " + e.getMessage());
+        }
+    }
+
+    public void tableOfContentAndProgressVisibility() throws InterruptedException {
+        try {
             page.waitForTimeout(2000);
+            page.frameLocator(SCO_IFRAME_LOCATOR).locator(CONTENT_MENU_PAGE_LOCATOR).click();
+            page.waitForTimeout(2000);
+
+            takeScreenshot();
+            logger.info("Table of Contents is visible");
+
+            Locator progressElement = page.frameLocator(SCO_IFRAME_LOCATOR).locator(OVERALL_PROGRESS_LOCATOR);
+            progressElement.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+            initialProgressText = progressElement.innerText();
+            logger.info("Initial Progress Text: " + initialProgressText);
 
         } catch (Exception e) {
-            logAssert_Fail("Error" + e.getMessage());
+            logger.error("Exception in tableOfContentAndProgressVisibility: " + e.getMessage());
+            logAssert_Fail("Error in tableOfContentAndProgressVisibility: " + e.getMessage());
         }
     }
 
-    private FrameLocator getFrameLocator() {
-        return page.frameLocator("//iframe[@id='SCO']");
-    }
-
-    private Locator getNextButtonLocator(FrameLocator frame) {
-        return frame.locator("//button[@class='navigation-arrow right highlight']");
-    }
-
-    private Locator getVideoElementLocator(FrameLocator frame) {
-        return frame.locator("//video[@preload='auto']");
-    }
-
-    private void setVideoPlaybackSpeed(Locator videoElement, double speed) {
-        if (videoElement != null && videoElement.isVisible()) {
-            videoElement.evaluate("video => video.playbackRate = " + speed);
-            logger.info("Playback speed increased to" + speed);
-        }
-    }
-
-    private void startTheSCORM(FrameLocator frame) {
-        frame.locator("//div[@class='kapitel-item-titel']").nth(0).isVisible();
-        frame.locator("//div[@class='kapitel-item-titel']").nth(0).click();
-        frame.locator("//div[@class='seiten-nav-container active']//div[1]//div[1]//div[3]").click();
-    }
-
-    private boolean waitForVisibility(Locator locator, int timeoutSec) {
-        long start = System.currentTimeMillis();
-        while ((System.currentTimeMillis() - start) < timeoutSec * 1000) {
-            try {
-                if (locator.isVisible()) {
-                    return true;
-                }
-            } catch (PlaywrightException ignored) {}
-            page.waitForTimeout(1000);
-        }
-        return false;
-    }
-
-    public void completeTheCoursePartially() {
-        FrameLocator frame = getFrameLocator();
-        Locator nextButton = getNextButtonLocator(frame);
-        Locator videoElement = getVideoElementLocator(frame);
+    public void completeTheCoursePartially() throws InterruptedException {
+        FrameLocator frame = page.frameLocator(SCO_IFRAME_LOCATOR);
+        Locator nextButton = frame.locator(NEXT_BUTTON_LOCATOR);
+        Locator videoElement = frame.locator(VIDEO_ELEMENT_LOCATOR);
 
         startTheSCORM(frame);
         page.waitForTimeout(2000);
@@ -171,21 +199,59 @@ public class DEKRAScormTestingPage extends BasePage{
             setVideoPlaybackSpeed(videoElement, 16.0);
         } catch (PlaywrightException e) {
             logger.error("Click error: " + e.getMessage());
+            logAssert_Fail("Click error: " + e.getMessage());
             return;
         }
 
         if (waitForVisibility(nextButton, 30)) {
             logger.info("Next button became visible again. Exiting function.");
+            clicks(BACK_BUTTON_LOCATOR);
         } else {
             logger.error("Next button did not reappear in time.");
         }
     }
 
-    public void navigateThroughSCORM() throws IOException {
-        FrameLocator frame = getFrameLocator();
-        Locator nextButton = getNextButtonLocator(frame);
-        Locator videoElement = getVideoElementLocator(frame);
-        Locator completionMessage = frame.locator("//div[contains(text(),'Sie haben die Unterweisung')]");
+    private void setVideoPlaybackSpeed(Locator videoElement, double speed) {
+        if (videoElement != null && videoElement.isVisible()) {
+            videoElement.evaluate("video => video.playbackRate = " + speed);
+            logger.info("Playback speed increased to" + speed);
+        }
+    }
+
+    private void startTheSCORM(FrameLocator frame) throws InterruptedException {
+        try {
+            page.waitForLoadState();
+            Locator firstChapter = frame.locator(FIRST_CHAPTER_TITLE_LOCATOR).nth(0);
+            if (firstChapter.isVisible()) {
+                firstChapter.click();
+                frame.locator(ACTIVE_PAGE_ELEMENT_LOCATOR).click();
+            } else {
+                logAssert_Fail("First chapter title is not visible");
+            }
+        } catch (InterruptedException e) {
+            logAssert_Fail("First chapter title is not visible");
+        }
+    }
+
+    private boolean waitForVisibility(Locator locator, int timeoutSec) {
+        long start = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - start) < timeoutSec * 1000) {
+            try {
+                if (locator.isVisible()) {
+                    return true;
+                }
+            } catch (PlaywrightException ignored) {}
+            page.waitForTimeout(1000);
+        }
+        return false;
+    }
+
+    public void navigateThroughSCORM() throws IOException, InterruptedException {
+        FrameLocator frame = page.frameLocator(SCO_IFRAME_LOCATOR);
+        Locator nextButton = frame.locator(NEXT_BUTTON_LOCATOR);
+        Locator videoElement = frame.locator(VIDEO_ELEMENT_LOCATOR);
+        Locator completionMessage = frame.locator(COMPLETION_MESSAGE_LOCATOR);
+
         int totalClicks = 0;
 
         startTheSCORM(frame);
@@ -212,7 +278,7 @@ public class DEKRAScormTestingPage extends BasePage{
                 page.waitForTimeout(1500);
             } catch (PlaywrightException e) {
                 logger.error("Click error: " + e.getMessage());
-                break;
+                logAssert_Fail("Click error: " + e.getMessage());
             }
             dragAndDrop(frame);
             clickAllVisibleVideoButtons(frame);
@@ -225,8 +291,8 @@ public class DEKRAScormTestingPage extends BasePage{
     }
 
     public static void dragAndDrop(FrameLocator frameLocator) throws IOException {
-        Locator richtig = frameLocator.locator("//div[@id='column-1']");
-        Locator falsch = frameLocator.locator("//div[@id='column-2']");
+        Locator richtig = frameLocator.locator(RICHTIG_LOCATOR);
+        Locator falsch = frameLocator.locator(FALSCH_LOCATOR);
 
         // Check visibility before proceeding
         if (!richtig.isVisible() || !falsch.isVisible()) {
@@ -236,35 +302,28 @@ public class DEKRAScormTestingPage extends BasePage{
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(new File("src/test/java/com/lh/testdata/mcq-answers.json"));
-
         String currentCourse = root.get("currentCourse").asText();
 
         for (int i = 1; i <= 20; i++) {
             String questionKey = currentCourse + "_Q" + i;
             JsonNode answerSet = root.get(questionKey);
 
-            if (answerSet == null) {
-                continue; // No data for this question
-            }
+            if (answerSet == null) continue;
 
             JsonNode richtigAnswers = answerSet.get("richtig");
             JsonNode falschAnswers = answerSet.get("falsch");
 
-            // Peek into the first available option to detect if question is active
             if (richtigAnswers != null && !richtigAnswers.isEmpty()) {
                 String previewText = richtigAnswers.get(0).asText();
-                Locator previewOption = frameLocator.locator("//div[contains(text(),\"" + previewText + "\")]");
+                Locator previewOption = frameLocator.locator(String.format(ANSWER_OPTION_LOCATOR_TEMPLATE, previewText));
 
-                if (!previewOption.isVisible()) {
-                    continue; // This question is not visible
-                }
+                if (!previewOption.isVisible()) continue;
 
                 logger.info("Drag-and-drop question " + i + " found. Performing actions...");
 
-                // Drag richtig
                 for (JsonNode answerNode : richtigAnswers) {
                     String text = answerNode.asText();
-                    Locator option = frameLocator.locator("//div[contains(text(),\"" + text + "\")]");
+                    Locator option = frameLocator.locator(String.format(ANSWER_OPTION_LOCATOR_TEMPLATE, text));
                     if (option.isVisible()) {
                         option.dragTo(richtig);
                         logger.info("Dragged to Richtig: " + text);
@@ -273,11 +332,10 @@ public class DEKRAScormTestingPage extends BasePage{
                     }
                 }
 
-                // Drag falsch
                 if (falschAnswers != null) {
                     for (JsonNode answerNode : falschAnswers) {
                         String text = answerNode.asText();
-                        Locator option = frameLocator.locator("//div[contains(text(),\"" + text + "\")]");
+                        Locator option = frameLocator.locator(String.format(ANSWER_OPTION_LOCATOR_TEMPLATE, text));
                         if (option.isVisible()) {
                             option.dragTo(falsch);
                             logger.info("Dragged to Falsch: " + text);
@@ -287,85 +345,102 @@ public class DEKRAScormTestingPage extends BasePage{
                     }
                 }
 
-                // Click check button
-                Locator checkButton = frameLocator.locator("//div[@class='drag-n-drop-check-button wbt-button']");
+                Locator checkButton = frameLocator.locator(CHECK_BUTTON_LOCATOR);
                 if (checkButton.isVisible()) {
                     checkButton.click();
                     logger.info("Clicked check button for question " + i);
                 }
-                Locator nextQuestion = frameLocator.locator("//div[contains(@class, 'message-box-next-question-button') and contains(text(), 'Nächste Frage')]");
-                if (nextQuestion.isVisible()){
+
+                Locator nextQuestion = frameLocator.locator(NEXT_QUESTION_BUTTON_LOCATOR);
+                if (nextQuestion.isVisible()) {
                     nextQuestion.click();
                     logger.info("Next Question button clicked");
                 }
             }
         }
     }
-
-    public static void answerMcqsIfPresent(FrameLocator frame) {
-        String course = courseName; // Still dynamic
+    public static void answerMcqsIfPresent(FrameLocator frame) throws InterruptedException {
+        String course = courseName;
 
         for (int i = 1; i <= 20; i++) {
             List<String> answers = McqAnswerLoader.getAnswers(course, String.valueOf(i));
 
-            if (!answers.isEmpty()) {
-                // Try both locator strategies for the first answer to detect visibility
-                String answerText = answers.get(0);
+            if (answers.isEmpty()) continue;
 
-                Locator containsLabel = frame.locator("//label[contains(text(),'" + answerText + "')]");
-                Locator normalizedLabel = frame.locator("//label[normalize-space()='" + answerText + "']");
+            String answerText = answers.get(0);
 
-                if (containsLabel.isVisible() || normalizedLabel.isVisible()) {
-                    logger.info("Question " + i + " found. Selecting answers...");
+            Locator containsLabel = frame.locator(String.format(CONTAINS_LABEL_LOCATOR_TEMPLATE, answerText));
+            Locator normalizedLabel = frame.locator(String.format(NORMALIZED_LABEL_LOCATOR_TEMPLATE, answerText));
 
-                    for (String answer : answers) {
-                        try {
-                            // Create both locators for each answer
-                            Locator option1 = frame.locator("//label[contains(text(),'" + answer + "')]");
-                            Locator option2 = frame.locator("//label[normalize-space()='" + answer + "']");
+            if (containsLabel.isVisible() || normalizedLabel.isVisible()) {
+                logger.info("Question " + i + " found. Selecting answers...");
 
-                            if (option1.isVisible()) {
-                                option1.click();
-                                logger.info("Clicked (contains): " + answer);
-                            } else if (option2.isVisible()) {
-                                option2.click();
-                                logger.info("Clicked (normalized): " + answer);
-                            } else {
-                                logger.info("Answer not visible: " + answer);
-                            }
-                        } catch (Exception e) {
-                            logger.error("Failed to click answer: " + answer);
+                for (String answer : answers) {
+                    try {
+                        Locator option1 = frame.locator(String.format(CONTAINS_LABEL_LOCATOR_TEMPLATE, answer));
+                        Locator option2 = frame.locator(String.format(NORMALIZED_LABEL_LOCATOR_TEMPLATE, answer));
+
+                        if (option1.isVisible()) {
+                            option1.click();
+                            logger.info("Clicked (contains): " + answer);
+                        } else if (option2.isVisible()) {
+                            option2.click();
+                            logger.info("Clicked (normalized): " + answer);
+                        } else {
+                            logger.info("Answer not visible: " + answer);
                         }
+                    } catch (Exception e) {
+                        logger.error("Failed to click answer: " + answer + ". Error: " + e.getMessage());
                     }
-
-                    // Submit answer and click next
-                    pageSafeClick(frame, "//div[@class='frage-antwort-button wbt-button']");
-                    clickNextButton(page);
                 }
+                // Submit answer
+                pageSafeClick(frame);
+                clickNextButton(page);
             }
         }
     }
 
-    public static void clickNextButton(Page page) {
-        if(page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='message-box-next-question-button wbt-button']").isVisible()) {
-            page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='message-box-next-question-button wbt-button']").click();
-        }
-        else if (page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='frage-next-button wbt-button']").isVisible()){
-            page.frameLocator("//iframe[@id='SCO']").locator("//div[@class='frage-next-button wbt-button']").click();
-        }
-        else {
-            logger.info("No matching button was found.");
+    private static void pageSafeClick(FrameLocator frame) throws InterruptedException {
+        try {
+            if (frame.locator(SUBMIT_BUTTON_LOCATOR).isVisible()) {
+                frame.locator(SUBMIT_BUTTON_LOCATOR).click();
+                logger.info("Clicked: " + SUBMIT_BUTTON_LOCATOR);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to click: " + SUBMIT_BUTTON_LOCATOR);
+            logAssert_Fail("Failed to click: " + e.getMessage()) ;
         }
     }
 
+    public static void clickNextButton(Page page) throws InterruptedException {
+        FrameLocator frame = page.frameLocator(SCO_IFRAME_LOCATOR);
+
+        Locator nextQuestionBtn = frame.locator(NEXT_QUESTION_BUTTON);
+        Locator questionNextBtn = frame.locator(QUESTION_NEXT_BUTTON);
+
+        try {
+            if (nextQuestionBtn.isVisible()) {
+                nextQuestionBtn.click();
+                logger.info("Clicked 'Next Question' button.");
+            } else if (questionNextBtn.isVisible()) {
+                questionNextBtn.click();
+                logger.info("Clicked 'Frage Next' button.");
+            } else {
+                logger.info("No matching next button was found.");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to click next button: " + e.getMessage());
+            logAssert_Fail("Next button click failed: " + e.getMessage());
+        }
+    }
     public static void clickAllVisibleVideoButtons(FrameLocator frame) {
-        FrameLocator frameLocator = page.frameLocator("//iframe[@id='SCO']");
-        Locator videoElement = frameLocator.locator("//video[@preload='auto']");
+        FrameLocator frameLocator = page.frameLocator(SCO_IFRAME_LOCATOR);
+        Locator videoElement = frameLocator.locator(VIDEO_ELEMENT_LOCATOR);
 
         int index = 1;
 
         while (true) {
-            String currentXpath = "(//div[@class='interaction-button-info'])[" + index + "]";
+            String currentXpath = String.format(INTERACTION_BUTTON_LOCATOR_TEMPLATE, index);
             Locator currentButton = frame.locator(currentXpath);
 
             if (currentButton.count() == 0) {
@@ -374,95 +449,40 @@ public class DEKRAScormTestingPage extends BasePage{
             }
 
             try {
-                // Wait until the current button becomes visible (in case it's still loading)
-                int maxWaitMs = 20000;
-                int waited = 0;
-                int pollInterval = 1000;
-
-                while (!currentButton.isVisible() && waited < maxWaitMs) {
-                    Thread.sleep(pollInterval);
-                    waited += pollInterval;
-                }
-
-                if (!currentButton.isVisible()) {
-                    logger.info("Button at index " + index + " never became visible. Skipping.");
-                    index++;
-                    continue;
-                }
+                // Wait for the button to be visible (max 10s)
+                currentButton.waitFor(new Locator.WaitForOptions()
+                        .setTimeout(10000)
+                        .setState(WaitForSelectorState.VISIBLE));
 
                 logger.info("Clicking video button at index: " + index);
-
                 currentButton.click();
                 page.waitForTimeout(2000);
-                if (videoElement.isVisible()){
-                    videoElement.evaluate("video => video.playbackRate = 16.0"); // speeds are 2.0, 4.0, 8.0, 16.0
+
+                if (videoElement.isVisible()) {
+                    videoElement.evaluate("video => video.playbackRate = 16.0");
                 } else {
                     logger.info("Video element not visible");
                 }
 
-                // ✅ Immediately check until the button disappears, then break early
-                long disappearStart = System.currentTimeMillis();
-                while ((System.currentTimeMillis() - disappearStart) < 20000) { // Max 3 mins wait
-                    try {
-                        // If the element is gone or invisible, break immediately
-                        if (currentButton.count() == 0 || !currentButton.isVisible()) {
-                            logger.info("Button at index " + index + " has disappeared. Proceeding.");
-                            break;
-                        }
-                    } catch (PlaywrightException ignored) {
-                        break; // element is likely detached
-                    }
-                    page.waitForTimeout(pollInterval);
-                }
+                // Wait until the button disappears (max 10s)
+                currentButton.waitFor(new Locator.WaitForOptions()
+                        .setTimeout(10000)
+                        .setState(WaitForSelectorState.HIDDEN));
+                logger.info("Button at index " + index + " has disappeared. Proceeding.");
 
+            } catch (PlaywrightException e) {
+                logger.warn("Button at index " + index + " is not clickable or didn't disappear in time.");
             } catch (Exception e) {
-                logger.error("Error at index " + index + ": " + e.getMessage());
+                logger.error("Unexpected error at index " + index + ": " + e.getMessage());
             }
 
             index++;
         }
     }
 
-    private static void pageSafeClick(FrameLocator frame, String selector) {
-        try {
-            if (frame.locator(selector).isVisible()) {
-                frame.locator(selector).click();
-                logger.info("Clicked: " + selector);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to click: " + selector);
-        }
-    }
-
-    public void tableOfContentVisibility() throws InterruptedException {
-        try {
-            FrameLocator frame = page.frameLocator("//iframe[@id='SCO']");
-            Locator menuIcon = frame.locator("//i[@class='fa fa-bars']");
-            menuIcon.isVisible();
-            page.waitForTimeout(2000);
-
-            frame.locator("//div[@id='content-menu-process-info-page']").isVisible();
-            page.waitForTimeout(2000);
-
-            takeScreenshot();
-            logger.info("Table of Contents is visible");
-
-            Locator progressElement = frame.locator("//div[@id='content-menu-process-info-overall']");
-            progressElement.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-            initialProgressText = progressElement.innerText();
-            logger.info("Initial Progress Text: " + initialProgressText);
-
-        } catch (Exception e) {
-            logger.error("Exception in tableOfContentVisibility: " + e.getMessage());
-            logAssert_Fail("Error in visibility" + e.getMessage());
-        }
-    }
-
     public void validateProgressBarUpdate() throws InterruptedException {
         try {
-            FrameLocator frame = page.frameLocator("//iframe[@id='SCO']");
-
-            Locator progressElement = frame.locator("//div[@id='content-menu-process-info-overall']");
+            Locator progressElement = page.frameLocator(SCO_IFRAME_LOCATOR).locator(OVERALL_PROGRESS_LOCATOR);
             progressElement.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
             String progressText = progressElement.innerText();
             logger.info("Current Progress Text: " + progressText);
@@ -471,7 +491,7 @@ public class DEKRAScormTestingPage extends BasePage{
 
             // Compare progress
             if (progressText.equals(initialProgressText)) {
-                throw new RuntimeException("Progress did not update");
+                logAssert_Fail("Progress did not update!");
             } else {
                 logger.info("Progress updated successfully.");
             }
@@ -485,9 +505,9 @@ public class DEKRAScormTestingPage extends BasePage{
 
     public void scormTesting() {
         // Wait for the iframe and get its locator
-        page.waitForSelector("//iframe[@id='SCO']", new Page.WaitForSelectorOptions().setTimeout(2000));
+        page.waitForSelector(SCO_IFRAME_LOCATOR, new Page.WaitForSelectorOptions().setTimeout(2000));
 
-        ElementHandle iframeElement = page.querySelector("#SCO");
+        ElementHandle iframeElement = page.querySelector(SCO_IFRAME_SELECTOR);
         if (iframeElement == null) {
             logger.info("Iframe element not found!");
             return;
@@ -500,7 +520,7 @@ public class DEKRAScormTestingPage extends BasePage{
             return;
         }
 
-        logger.info("Frame URL: " + scormFrame.url());  // ✅ Now it's safe
+        logger.info("Frame URL: " + scormFrame.url());
         page.waitForTimeout(10000); // give time to load the API
 
         logger.info("SCORM session initialized successfully");
@@ -519,29 +539,11 @@ public class DEKRAScormTestingPage extends BasePage{
 //        data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
 //        data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
 
-        generateHtmlReport(data);
+        ReportGenerator generator = new HtmlReportGenerator();
+        FileWriterService writer = new FileWriterService();
+        SCORMReportService reportService = new SCORMReportService(generator, writer);
+
+        reportService.generateAndSave(data);
         logger.info("SCORM report generated successfully.");
-    }
-
-
-    public void enterCredentials() throws IOException, InterruptedException {
-        Properties props = new Properties();
-        FileInputStream fis = new FileInputStream("src/test/resources/config.properties");
-        props.load(fis);
-
-        String loginId = props.getProperty("LoginID");
-        String encodedPassword = props.getProperty("Password");
-
-        // Decode Base64 password
-        byte[] decodedBytes = Base64.getDecoder().decode(encodedPassword);
-        String password = new String(decodedBytes);
-
-        logger.info("Launching LMS with credentials");
-        clicks("IDField");
-        enterText("//input[@id='externalForm:login']", loginId);
-        clicks("PasswordField");
-        enterText("//input[@id='externalForm:password']", password);
-
-
     }
 }

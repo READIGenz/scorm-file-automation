@@ -1,6 +1,5 @@
 package com.lh.runner;
 
-import com.genz.xray.ObjTestExecution;
 import com.lh.core.config.PropertiesHandler;
 import com.lh.reportsfreemaker.ReportBuilder;
 import com.lh.xray.Log;
@@ -23,15 +22,9 @@ import java.util.Date;
 public class JunitRunner {
 
     public final static String PATH_TO_CUCUMBER_REPORT = "target/cucumber.json";
-    public final static String PATH_REPORT_TEAMPLATE = "custom_templates/templates.json";
-
-    public static String ExecutionID = "";
-    public static String currentXrayIssueKey = "";
-    public static boolean featureTestPassed = true;
     public static String testStart = "";
     public static String folderNameReport = "";
     //test
-    public static ObjTestExecution te = null;
     public static String folderNameReport1 = "";
 
     @BeforeClass
@@ -48,10 +41,6 @@ public class JunitRunner {
     @AfterClass
     public static void teardown() throws Exception {
         try {
-//            ObjTestCoverage tc = new ObjTestCoverage();
-//
-//            tc = Xray.getTestAutomationCoverage(com.genz.config.PropertiesHandler.getXrayProjectKey(), false);
-
             ReportBuilder.generateReport();
         } catch (Exception e) {
             // TODO Auto-generated catch block

@@ -61,14 +61,14 @@ public class BasePage {
 		return status;
 	}
 
-	public void takeScreenshot() {
+	public static void takeScreenshot() {
 		byte[] screenshot = page.screenshot(new Page.ScreenshotOptions().setFullPage(true));
 		String testname = sc.getName();
 		sc.embed(screenshot, "image/png");
 		sc.write(testname);
 	}
 
-	public void logAssert_Fail(String errMsg) throws InterruptedException {
+	public static void logAssert_Fail(String errMsg) throws InterruptedException {
 
 		log.error(errMsg);
 		takeScreenshot();

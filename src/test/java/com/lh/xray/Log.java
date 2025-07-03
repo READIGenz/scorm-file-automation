@@ -17,10 +17,8 @@ public class Log {
 
 	public static void setLogger() {
 
-		System.setProperty("log-directory", com.genz.config.PropertiesHandler.getLogsFolder());
 		SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss");
 		System.setProperty("currenttime", dateFormat.format(new Date()));
-		info("Log configuration done. Log Dir:" + com.genz.config.PropertiesHandler.getLogsFolder());
 
 	}
 
