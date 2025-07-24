@@ -12,7 +12,6 @@ public class GenericHooks extends BasePage {
 
 	@Before
 	public void before(Scenario scenario) {
-		DriverManager.setUp();
 		System.out.println("Scenario name: " + scenario.getName());
 		setScenario(scenario);
 	}

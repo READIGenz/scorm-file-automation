@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LHGLMS - SCORM Testing</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000;
+        }
+
+        header {
+            background-color: #00205B;
+            color: white;
+            padding: 20px 40px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            position: relative;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 20px;
+            background-color: #001f5c;
+            color: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #003080;
+        }
+
+        .report-box {
+            margin-top: 40px;
+            background-color: #f5f7fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .report-box h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+
+        .report-box a {
+            display: block;
+            margin-top: 8px;
+            text-decoration: none;
+            color: #003080;
+            font-weight: bold;
+        }
+
+        .report-box a:hover {
+            text-decoration: underline;
+        }
+
+        .info-icon {
+            display: inline-block;
+            margin-left: 6px;
+            cursor: pointer;
+            color: #003080;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .info-icon .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            background-color: #00205B;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1000;
+            top: 50%;
+            left: 100%;
+            transform: translateY(-50%);
+            width: 320px;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: normal;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            margin-left: 10px;
+        }
+
+        .info-icon:hover .tooltip,
+        .info-icon.show-tooltip .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #formatError {
+            color: red;
+            font-size: 13px;
+            display: none;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>LHGLMS</h1>
+    <p>SCORM Testing</p>
+</header>
+
+<div class="container">
+    <form id="scorm-form">
+        <label for="scormName">SCORM Name <span style="color: red;">*</span></label>
+        <input type="text" id="scormName" name="scormName" placeholder="Enter SCORM name" required />
+        <div id="scormNameError" style="color: red; font-size: 13px; display: none; margin-top: 4px;">
+            SCORM Name is required.
+        </div>
+
+        <label for="scormAnswers">
+            Enter All the Answers
+            <span class="info-icon" id="infoIcon">ⓘ
+                <span class="tooltip">
+                    Input Format:<br><br>
+                    <strong>Welche Verordnungen auf Europäischer Ebene regeln die Luftsicherheit? (Mehrere Antworten sind richtig!)</strong><br>
+                    ANS=<br>
+                    1. Verordnung (EG) Nr. 300/2008<br>
+                    2. Durchführungsverordnung (EU) 2015/1998<br><br>
+
+                    <strong>Wodurch muss ein Luftfahrtunternehmen die Sicherheit ihrer Luftfahrzeuge gewährleisten?</strong><br>
+                    ANS=<br>
+                    1. Luftfahrzeug-Sicherheitsdurchsuchungen<br>
+                    2. Sicherung abgestellter Luftfahrzeuge<br><br>
+
+                    <strong>Format Rule:</strong> Each question should be followed by "ANS=" and one or more answers.
+                </span>
+            </span>
+        </label>
+        <textarea id="scormAnswers" name="scormAnswers" placeholder="Type answers here..."></textarea>
+        <div id="formatError">
+            ❌ Format error. Please follow the format shown in the info icon.
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <div class="report-box">
+        <h3>Download Reports</h3>
+        <a id="testReportLink" href="/download/latest-zip" download="Test-Automation.zip">📦 Test Automation Report (ZIP)</a>
+        <a id="scormReportLink" href="/download/latest-report" download="SCORM-Report.html">📄 SCORM Report</a>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('scorm-form');
+    const scormNameInput = document.getElementById('scormName');
+    const scormAnswersInput = document.getElementById('scormAnswers');
+    const scormNameError = document.getElementById('scormNameError');
+    const formatError = document.getElementById('formatError');
+    const infoIcon = document.getElementById('infoIcon');
+
+    function validateAnswerFormat(input) {
+        // ✅ If input is completely blank or empty, accept it
+        if (!input.trim()) return true;
+
+        const lines = input.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+        const blocks = [];
+        let currentBlock = [];
+
+        for (const line of lines) {
+            // Start new block if not an answer or option line
+            if (!line.startsWith("ANS=") && !/^\d+\.\s/.test(line)) {
+                if (currentBlock.length > 0) {
+                    blocks.push(currentBlock);
+                }
+                currentBlock = [line];
+            } else {
+                currentBlock.push(line);
+            }
+        }
+
+        if (currentBlock.length > 0) {
+            blocks.push(currentBlock);
+        }
+
+        // Validate each block
+        for (const block of blocks) {
+            const ansIndex = block.findIndex(line => line === "ANS=" || line.startsWith("ANS="));
+            if (ansIndex === -1) return false; // No ANS= line
+            if (ansIndex === 0) return false;  // No question content before ANS=
+
+            const answers = block.slice(ansIndex + 1);
+            const hasValidAnswer = answers.some(answer => /^\d+\.\s/.test(answer));
+            if (!hasValidAnswer) return false; // No valid options after ANS=
+        }
+
+        return blocks.length > 0;
+    }
+
+    function showTooltip() {
+        infoIcon.classList.add('show-tooltip');
+        // Hide the tooltip after 5 seconds
+        setTimeout(() => {
+            infoIcon.classList.remove('show-tooltip');
+        }, 5000);
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const scormName = scormNameInput.value.trim();
+        const scormAnswers = scormAnswersInput.value.trim();
+
+        // Reset error messages
+        scormNameError.style.display = 'none';
+        formatError.style.display = 'none';
+        infoIcon.classList.remove('show-tooltip');
+
+        // Validation
+        if (!scormName) {
+            scormNameError.style.display = 'block';
+            scormNameInput.focus();
+            return;
+        }
+
+        const formatValid = validateAnswerFormat(scormAnswers);
+        if (!formatValid) {
+            formatError.style.display = 'block';
+            showTooltip();
+            scormAnswersInput.focus();
+            return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('scormName', scormName);
+        formData.append('scormAnswers', scormAnswers);
+
+        fetch('/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(async response => {
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || '❌ Server error');
+        }
+
+        alert(result.message || '✅ Answers saved successfully!');
+
+        const testReportLink = document.getElementById('testReportLink');
+        const scormReportLink = document.getElementById('scormReportLink');
+
+        if (result.testReportPath) {
+            console.log("✅ Showing test report download link");
+            testReportLink.style.display = 'block';
+            testReportLink.href = '/download/latest-zip';
+            testReportLink.setAttribute("download", "Test-Automation-Report.zip");
+        }
+
+        if (result.scormReportPath) {
+            scormReportLink.href = '/download/latest-report';
+            scormReportLink.style.display = 'block';
+            scormReportLink.setAttribute("download", "SCORM-Report.html");
+        }
+    })
+    .catch(error => {
+        alert(error.message || '❌ Error submitting form');
+        console.error(error);
+    });
+    });
+
+</script>
+</body>
+</html>

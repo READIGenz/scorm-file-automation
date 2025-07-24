@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.util.Properties;
 
 public class PropertiesHandler {
-    static String strConfPath = "src/main/java/resources/config.properties";
+    static String strConfPath = "src/main/resources/config.properties";
 
     public PropertiesHandler() {
     }

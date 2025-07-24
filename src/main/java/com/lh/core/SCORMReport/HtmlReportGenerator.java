@@ -25,10 +25,7 @@ public class HtmlReportGenerator implements ReportGenerator {
                 .append(formatRow("Lesson Location", data.lessonLocation, "The last known location the student visited."))
                 .append(formatRow("Lesson Status", data.lessonStatus, "Shows if the student has completed the lesson."))
                 .append(formatRow("Lesson Mode", data.lessonMode, "Indicates the mode the course is being accessed in."))
-                //.append(formatRow("Session Time", data.sessionTime, "Total time the student spent in this session."))
-                //.append(formatRow("Suspend Data", data.suspendData, "Resume state information."))
-                //.append(formatRow("Score", data.rawScore, "Displays the score."));
-
+                .append(formatRow("External Links", data.externalLinks, "Any external URLs or links detected during SCORM session."))
                 .append("</table></body></html>");
 
         return html.toString();

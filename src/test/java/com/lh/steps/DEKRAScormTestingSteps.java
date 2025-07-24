@@ -2,6 +2,7 @@ package com.lh.steps;
 
 import com.lh.core.page.BasePage;
 import com.lh.core.page.DEKRAScormTestingPage;
+import com.lh.core.utils.DriverManager;
 import com.lh.utilities.Configurations;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
@@ -14,44 +15,54 @@ public class DEKRAScormTestingSteps extends BasePage{
 
     DEKRAScormTestingPage scormTestingPage = new DEKRAScormTestingPage();
 
-    @Given("The user launches LHG-LMS url")
-    public void userLaunchesLMSurl() throws IOException, InterruptedException {
-        try {
-            launchBrowser(Configurations.LHG_LMS_URL);
-        } catch (Exception e) {
-            logAssert_Fail("LMS URL launch failed due to: " + e.getMessage());
-        }
-    }
+//    @Given("The user launches the LMS on {string}")
+//    public void theUserLaunchesTheLMSOn(String browserName) throws InterruptedException {
+//        try {
+//            DriverManager.setUp(browserName);
+//            launchBrowser(Configurations.LHG_LMS_URL);
+//        } catch (Exception e) {
+//            logAssert_Fail("LMS URL launch failed due to: " + e.getMessage());
+//        }
+//    }
 
-    @And("The user performs login as a learner")
-    public void theUserPerformsLoginAsLearner() throws IOException, InterruptedException {
-        try {
-            scormTestingPage.loginAsLearner();
-        } catch (Exception e){
-            logAssert_Fail("Error in login due to: " + e.getMessage());
-        }
+//    @Given("The user launches LHG-LMS url")
+//    public void userLaunchesLMSurl() throws IOException, InterruptedException {
+//        try {
+//            launchBrowser(Configurations.LHG_LMS_URL);
+//        } catch (Exception e) {
+//            logAssert_Fail("LMS URL launch failed due to: " + e.getMessage());
+//        }
+//    }
 
-    }
+//    @And("The user performs login as a learner")
+//    public void theUserPerformsLoginAsLearner() throws IOException, InterruptedException {
+//        try {
+//            scormTestingPage.loginAsLearner();
+//        } catch (Exception e){
+//            logAssert_Fail("Error in login due to: " + e.getMessage());
+//        }
+//
+//    }
+//
+//    @And("The user navigates to the SCORM")
+//    public void theUserNavigatesToTheSCORM() throws InterruptedException {
+//        try {
+//            scormTestingPage.navigatesTillSCORM();
+//        } catch (Exception e) {
+//            logAssert_Fail("Error due to " + e.getMessage());
+//        }
+//    }
 
-    @And("The user navigates to the SCORM")
-    public void theUserNavigatesToTheSCORM() throws InterruptedException {
-        try {
-            scormTestingPage.navigatesTillSCORM();
-        } catch (Exception e) {
-            logAssert_Fail("Error due to " + e.getMessage());
-        }
-    }
+//    @When("The user opens the SCORM")
+//    public void theUserOpensTheSCORM() throws InterruptedException {
+//        try{
+//            scormTestingPage.openSCORM();
+//        } catch (Exception e){
+//            logAssert_Fail("Error in launching the SCORM" + e.getMessage());
+//        }
+//    }
 
-    @When("The user opens the SCORM")
-    public void theUserOpensTheSCORM() throws InterruptedException {
-        try{
-            scormTestingPage.openSCORM();
-        } catch (Exception e){
-            logAssert_Fail("Error in launching the SCORM" + e.getMessage());
-        }
-    }
-
-    @And("The user starts the course")
+    @And("The user starts the DEKRA SCORM course")
     public void theUserStartsTheCourse() throws InterruptedException {
         try{
             scormTestingPage.userStartsTheCourse();
@@ -91,7 +102,4 @@ public class DEKRAScormTestingSteps extends BasePage{
     public void theUserCompletedTheCourse() throws IOException, InterruptedException {
         scormTestingPage.navigateThroughSCORM();
     }
-
-
-
 }

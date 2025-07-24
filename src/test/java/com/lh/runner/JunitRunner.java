@@ -17,8 +17,14 @@ import java.util.Date;
 
 @RunWith(Cucumber.class)
 
-@CucumberOptions(monochrome = true, features = "src/test/java/com/lh/features/", dryRun = false, glue = {
-        "com/lh/steps"}, tags = "@SCROMTesting", plugin = {"json:target/cucumber.json"})
+@CucumberOptions(monochrome = true,
+        features = "src/test/java/com/lh/features/",
+        dryRun = false,
+        glue = {"com.lh.steps"},
+//        tags = "@SCORMTesting",
+//        tags = "@DEKRA",
+        tags = "@IMCExpressSCORM",
+        plugin = {"json:target/cucumber.json"})
 public class JunitRunner {
 
     public final static String PATH_TO_CUCUMBER_REPORT = "target/cucumber.json";

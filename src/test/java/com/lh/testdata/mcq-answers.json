@@ -1,10 +1,4 @@
 {
-  "currentCourse": "VSL",
-  "VSL": {
-    "1": ["Sie müssen gewährleisten, dass Personen", "Außerdem haben Luftfahrtunternehmen dafür zu sorgen", "An Türen zu Fluggastbrücken"],
-    "2": ["Zugangshilfen müssen entfernt sein", "Außentüren müssen entweder versiegelt"],
-    "3": ["Es muss überprüft werden"],
-    "4": ["Manipulationssicher", "Individuelle Nummer"],
-    "5": ["Eine Sicherheitsdurchsuchung veranlassen"]
-  }
+  "currentCourse" : "AI Awareness Demonstration",
+  "AI Awareness Demonstration" : { }
 }
