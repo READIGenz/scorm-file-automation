@@ -1,10 +1,5 @@
 package com.lh.core.page;
 
-import com.lh.core.SCORMReport.FileWriterService;
-import com.lh.core.SCORMReport.HtmlReportGenerator;
-import com.lh.core.SCORMReport.ReportGenerator;
-import com.lh.core.SCORMReport.SCORMReportService;
-import com.lh.core.SCORMReport.model.ScormData;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.FrameLocator;
 import com.lh.core.utils.McqAnswerLoader;
@@ -19,8 +14,6 @@ import java.io.IOException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -29,21 +22,10 @@ public class DEKRAScormTestingPage extends BasePage{
     private static final Logger logger = LogManager.getLogger(DEKRAScormTestingPage.class);
     private String initialProgressText = "";
 
-    // CONSTANTS FOR LOCATORS
-    // LOGIN PAGE
-    private static final String ID_FIELD_LOCATOR = "//input[@id='externalForm:login']";
-    private static final String PASSWORD_FIELD_LOCATOR = "//input[@id='externalForm:password']";
-    private static final String LOGIN_BTN_LOCATOR = "//button[@id='externalForm:loginButton']";
-
-    // SCORM NAVIGATION
-    private static final String MY_COURSES_LOCATOR = "//span[contains(text(), 'My courses')]";
-    private static final String ALL_COURSES_LOCATOR = "//a[@id='mylearnings-all']";
-    private static final String COURSE_LOCATOR = "//div[contains(text(), 'Test Factory Test AVSEC')]";
-
     // OPENING SCORM DYNAMICALLY FROM THE JSON FILE
     static String courseName = McqAnswerLoader.getCurrentCourseName();
     private static final String locatorValue = "//div[contains(text(), '" + courseName + "')]";
-    
+
     // USER STARTS THE COURSE
     private static final String SCO_IFRAME_LOCATOR = "//iframe[@id='SCO']";
     private static final String TRAINING_BEGINNEN_LOCATOR = "//div[normalize-space()='Training beginnen']";
@@ -79,8 +61,6 @@ public class DEKRAScormTestingPage extends BasePage{
     private static final String NEXT_QUESTION_BUTTON = "//div[@class='message-box-next-question-button wbt-button']";
     private static final String QUESTION_NEXT_BUTTON = "//div[@class='frage-next-button wbt-button']";
 
-    // SCORM API LOCATORS
-    private static final String SCO_IFRAME_SELECTOR = "#SCO";
 
     private static final Properties mcqProperties = new Properties();
     static {
@@ -99,49 +79,6 @@ public class DEKRAScormTestingPage extends BasePage{
             logger.info("Successfully clicked: " + locator);
         } catch (Exception e) {
             logAssert_Fail("Fails to select " + locator);
-        }
-    }
-
-    public void loginAsLearner() throws InterruptedException {
-        try {
-            Properties props = new Properties();
-            FileInputStream fis = new FileInputStream("src/test/resources/config.properties");
-            props.load(fis);
-
-            String loginId = props.getProperty("LoginID");
-            String encodedPassword = props.getProperty("Password");
-
-            // Decode Base64 password
-            byte[] decodedBytes = Base64.getDecoder().decode(encodedPassword);
-            String password = new String(decodedBytes);
-
-            logger.info("Launching LMS with credentials");
-            clicks(ID_FIELD_LOCATOR);
-            enterText(ID_FIELD_LOCATOR, loginId);
-            clicks(PASSWORD_FIELD_LOCATOR);
-            enterText(PASSWORD_FIELD_LOCATOR, password);
-            clicks(LOGIN_BTN_LOCATOR);
-        } catch (Exception e) {
-            logAssert_Fail("Error in login due to " + e.getMessage());
-        }
-    }
-
-    public void navigatesTillSCORM() throws InterruptedException {
-        try {
-            waitAndClick(MY_COURSES_LOCATOR);
-            waitAndClick(ALL_COURSES_LOCATOR);
-            waitAndClick(COURSE_LOCATOR);
-        } catch (Exception e) {
-            logAssert_Fail("Error in navigation due to " + e.getMessage());
-        }
-
-    }
-
-    public void openSCORM() throws InterruptedException {
-        try {
-            clicks(locatorValue);
-        } catch (InterruptedException e) {
-            logAssert_Fail("Error opening the SCORM " + e.getMessage() );
         }
     }
 
@@ -359,6 +296,7 @@ public class DEKRAScormTestingPage extends BasePage{
             }
         }
     }
+
     public static void answerMcqsIfPresent(FrameLocator frame) throws InterruptedException {
         String course = courseName;
 
@@ -500,50 +438,5 @@ public class DEKRAScormTestingPage extends BasePage{
             logger.error("FAIL: Progress update check failed. " + e.getMessage());
             logAssert_Fail("Progress bar not updated" + e.getMessage());
         }
-    }
-
-
-    public void scormTesting() {
-        // Wait for the iframe and get its locator
-        page.waitForSelector(SCO_IFRAME_LOCATOR, new Page.WaitForSelectorOptions().setTimeout(2000));
-
-        ElementHandle iframeElement = page.querySelector(SCO_IFRAME_SELECTOR);
-        if (iframeElement == null) {
-            logger.info("Iframe element not found!");
-            return;
-        }
-
-        Frame scormFrame = iframeElement.contentFrame();
-
-        if (scormFrame == null) {
-            logger.info("SCORM frame not loaded yet!");
-            return;
-        }
-
-        logger.info("Frame URL: " + scormFrame.url());
-        page.waitForTimeout(10000); // give time to load the API
-
-        logger.info("SCORM session initialized successfully");
-
-        ScormData data = new ScormData();
-
-        data.version = page.evaluate("() => typeof API_1484_11 !== 'undefined' ? 'SCORM 2004' : (typeof API !== 'undefined' ? 'SCORM 1.2' : 'Unknown')").toString();
-        data.studentId = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_id') || 'Not Found'").toString();
-        data.studentName = page.evaluate("() => API?.LMSGetValue?.('cmi.core.student_name') || 'Not Found'").toString();
-        data.objectivesCount = page.evaluate("() => API?.LMSGetValue?.('cmi.objectives._count') || 'Not Found'").toString();
-        data.audioPref = page.evaluate("() => API?.LMSGetValue?.('cmi.student_preference.audio') || 'Not Found'").toString();
-        data.lessonLocation = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_location') || 'Not Found'").toString();
-        data.lessonStatus = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_status') || 'Not Found'").toString();
-        data.lessonMode = page.evaluate("() => API?.LMSGetValue?.('cmi.core.lesson_mode') || 'Not Found'").toString();
-//        data.sessionTime = page.evaluate("() => API?.LMSGetValue?.('cmi.core.session_time') || 'Not Found'").toString();
-//        data.suspendData = page.evaluate("() => API?.LMSGetValue?.('cmi.suspend_data') || 'Not Found'").toString();
-//        data.rawScore = page.evaluate("() => API?.LMSGetValue?.('cmi.core.score.raw') || 'Not Found'").toString();
-
-        ReportGenerator generator = new HtmlReportGenerator();
-        FileWriterService writer = new FileWriterService();
-        SCORMReportService reportService = new SCORMReportService(generator, writer);
-
-        reportService.generateAndSave(data);
-        logger.info("SCORM report generated successfully.");
     }
 }
