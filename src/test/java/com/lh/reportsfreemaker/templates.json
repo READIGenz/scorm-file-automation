@@ -1,0 +1,18 @@
+{
+  "benchmark": "./custom_templates/benchmark.ftlh",
+  "breakdown": "./custom_templates/breakdown.ftlh",
+  "consolidated": "./custom_templates/consolidated.ftlh",
+  "coverage": "./custom_templates/coverage.ftlh",
+  "detailed": "./custom_templates/detailed.ftlh",
+  "feature_map": "./custom_templates/feature_map.ftlh",
+  "feature_overview": "./custom_templates/feature_overview.ftlh",
+  "known_errors": "./custom_templates/known_errors.ftlh",
+  "overview": "./custom_templates/overview.ftlh",
+  "overview_chart": "./custom_templates/overview_chart.ftlh",
+  "pie_chart": "./custom_templates/pie_chart.ftlh",
+  "retrospective": "./custom_templates/retrospective.ftlh",
+  "system_info": "./custom_templates/system_info.ftlh",
+  "tables": "./custom_templates/tables.ftlh",
+  "usage": "./custom_templates/usage.ftlh",
+  "logo": "./custom_templates/lh-logo-crane-typo.png"
+}
