@@ -6,13 +6,11 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +21,7 @@ public class SimpleHttpJsonServer {
     private static final Logger logger = LogManager.getLogger(SimpleHttpJsonServer.class);
 
     public static void main(String[] args) throws Exception {
+        logger.info("🚀 HTTP Server is starting...");
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
         logger.info("🛠️ Initializing server contexts...");
@@ -86,7 +85,9 @@ public class SimpleHttpJsonServer {
         }
 
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "UTF-8"));
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)
+            );
             StringBuilder formData = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -96,10 +97,14 @@ public class SimpleHttpJsonServer {
             Map<String, String> parsed = parseForm(formData.toString());
             String scormName = parsed.get("scormName");
             String scormAnswers = parsed.get("scormAnswers");
+            String vendorName = parsed.get("vendorName");
 
             if (scormName == null || scormName.trim().isEmpty()) {
                 throw new IllegalArgumentException("❌ SCORM Name is required.");
             }
+
+            logger.info("📦 Received SCORM: {}");
+            logger.info("🏷️ Vendor Tag: @{}");
 
             Map<String, Object> finalData = new LinkedHashMap<>();
             Map<String, List<String>> courseAnswers = parseAnswersFormatted(scormAnswers);
@@ -110,11 +115,27 @@ public class SimpleHttpJsonServer {
             Files.createDirectories(filePath.getParent());
             new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), finalData);
 
-            // Run tests
-            Result result = runJUnitTests();
+            // Run JUnit tests with vendor tag
+            String tag = "@" + vendorName.trim();
+            ProcessBuilder pb = new ProcessBuilder("mvn.cmd", "test", "-Dcucumber.filter.tags=" + tag);
+            pb.directory(new File("."));
+            pb.redirectErrorStream(true);
+            logger.info("🚀 Running tests with tag: " + tag);
+
+            Process process = pb.start();
+            BufferedReader processReader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)
+            );
+
+            while ((line = processReader.readLine()) != null) {
+                logger.info("[mvn]" + line);
+            }
+
+            int exitCode = process.waitFor();
+            boolean success = (exitCode == 0);
 
             Map<String, String> responseMap = new LinkedHashMap<>();
-            responseMap.put("message", result.wasSuccessful() ? "✅ All tests passed!" : "⚠️ Some tests failed.");
+            responseMap.put("message", success ? "✅ Tests passed!" : "⚠️ Tests failed. Check reports.");
 
             String jsonResponse = new ObjectMapper().writeValueAsString(responseMap);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
@@ -123,95 +144,14 @@ public class SimpleHttpJsonServer {
             exchange.getResponseBody().close();
 
         } catch (Exception ex) {
+            logger.error("❌ Error occurred during /submit: ", ex);
+
             String errorResponse = "{\"error\": \"" + ex.getMessage().replace("\"", "'") + "\"}";
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(500, errorResponse.getBytes().length);
             exchange.getResponseBody().write(errorResponse.getBytes());
             exchange.getResponseBody().close();
-            ex.printStackTrace();
         }
-    }
-
-    private static Result runJUnitTests() throws IOException, InterruptedException {
-        System.out.println("▶️ Running JUnit tests via Maven...");
-
-        // Use platform-specific Maven command
-        String mvnCmd = System.getProperty("os.name").toLowerCase().contains("win") ? "mvn.cmd" : "mvn";
-
-        ProcessBuilder builder = new ProcessBuilder(
-                mvnCmd, "test", "-Dtest=com.lh.runner.JunitRunner"
-        );
-
-        // Ensure the working directory is project root
-        builder.directory(new File(System.getProperty("user.dir")));
-        builder.redirectErrorStream(true);
-
-        Process process = builder.start();
-
-        StringBuilder output = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-                System.out.println(line);
-            }
-        }
-
-        int exitCode = process.waitFor();
-        System.out.println("✅ Test process exited with code: " + exitCode);
-
-        return createMockResult(exitCode == 0, output.toString());
-    }
-
-    private static class MockResult extends Result {
-        private final boolean success;
-        private final String output;
-
-        public MockResult(boolean success, String output) {
-            this.success = success;
-            this.output = output;
-        }
-
-        @Override
-        public boolean wasSuccessful() {
-            return success;
-        }
-
-        @Override
-        public int getFailureCount() {
-            return success ? 0 : 1;
-        }
-
-        @Override
-        public List<Failure> getFailures() {
-            return success ? Collections.emptyList() :
-                    Collections.singletonList(new Failure(null, new AssertionError(output)));
-        }
-
-        // Add other required overrides with default values
-        @Override
-        public int getRunCount() {
-            return 1;
-        }
-
-        @Override
-        public int getIgnoreCount() {
-            return 0;
-        }
-
-        @Override
-        public long getRunTime() {
-            return 0;
-        }
-
-        public String getOutput() {
-            return output;
-        }
-    }
-
-    private static Result createMockResult(boolean success, String output) {
-        return new MockResult(success, output);
     }
 
     private static Map<String, String> parseForm(String formData) throws UnsupportedEncodingException {

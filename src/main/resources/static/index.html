@@ -41,6 +41,7 @@
         }
 
         input[type="text"],
+        select,
         textarea {
             width: 100%;
             padding: 10px;
@@ -131,7 +132,9 @@
             opacity: 1;
         }
 
-        #formatError {
+        #formatError,
+        #scormNameError,
+        #vendorError {
             color: red;
             font-size: 13px;
             display: none;
@@ -147,12 +150,22 @@
 
 <div class="container">
     <form id="scorm-form">
+        <!-- Vendor Dropdown -->
+        <label for="vendorName">Vendor Name <span style="color: red;">*</span></label>
+        <select id="vendorName" name="vendorName" required>
+            <option value="">-- Select Vendor --</option>
+            <option value="DEKRA">DEKRA</option>
+            <option value="IMCExpress">IMCExpress</option>
+            <option value="FKC">FKC</option>
+        </select>
+        <div id="vendorError">Vendor Name is required.</div>
+
+        <!-- SCORM Name -->
         <label for="scormName">SCORM Name <span style="color: red;">*</span></label>
         <input type="text" id="scormName" name="scormName" placeholder="Enter SCORM name" required />
-        <div id="scormNameError" style="color: red; font-size: 13px; display: none; margin-top: 4px;">
-            SCORM Name is required.
-        </div>
+        <div id="scormNameError">SCORM Name is required.</div>
 
+        <!-- SCORM Answers -->
         <label for="scormAnswers">
             Enter All the Answers
             <span class="info-icon" id="infoIcon">ⓘ
@@ -180,23 +193,28 @@
         <button type="submit">Submit</button>
     </form>
 
-    <div class="report-box">
+    <!-- Hidden report box -->
+    <div class="report-box" id="reportBox" style="display: none;">
         <h3>Download Reports</h3>
-        <a id="testReportLink" href="/download/latest-zip" download="Test-Automation.zip">📦 Test Automation Report (ZIP)</a>
         <a id="scormReportLink" href="/download/latest-report" download="SCORM-Report.html">📄 SCORM Report</a>
+        <a id="testReportLink" href="/download/latest-zip" download="Test-Automation.zip">📦 Test Automation Report (ZIP)</a>
     </div>
 </div>
 
 <script>
     const form = document.getElementById('scorm-form');
+    const vendorInput = document.getElementById('vendorName');
+    const vendor = document.getElementById("vendorName");
     const scormNameInput = document.getElementById('scormName');
     const scormAnswersInput = document.getElementById('scormAnswers');
+
+    const vendorError = document.getElementById('vendorError');
     const scormNameError = document.getElementById('scormNameError');
     const formatError = document.getElementById('formatError');
     const infoIcon = document.getElementById('infoIcon');
+    const reportBox = document.getElementById('reportBox');
 
     function validateAnswerFormat(input) {
-        // ✅ If input is completely blank or empty, accept it
         if (!input.trim()) return true;
 
         const lines = input.split(/\r?\n/).map(line => line.trim()).filter(line => line);
@@ -204,7 +222,6 @@
         let currentBlock = [];
 
         for (const line of lines) {
-            // Start new block if not an answer or option line
             if (!line.startsWith("ANS=") && !/^\d+\.\s/.test(line)) {
                 if (currentBlock.length > 0) {
                     blocks.push(currentBlock);
@@ -219,15 +236,12 @@
             blocks.push(currentBlock);
         }
 
-        // Validate each block
         for (const block of blocks) {
             const ansIndex = block.findIndex(line => line === "ANS=" || line.startsWith("ANS="));
-            if (ansIndex === -1) return false; // No ANS= line
-            if (ansIndex === 0) return false;  // No question content before ANS=
-
+            if (ansIndex === -1 || ansIndex === 0) return false;
             const answers = block.slice(ansIndex + 1);
             const hasValidAnswer = answers.some(answer => /^\d+\.\s/.test(answer));
-            if (!hasValidAnswer) return false; // No valid options after ANS=
+            if (!hasValidAnswer) return false;
         }
 
         return blocks.length > 0;
@@ -235,7 +249,6 @@
 
     function showTooltip() {
         infoIcon.classList.add('show-tooltip');
-        // Hide the tooltip after 5 seconds
         setTimeout(() => {
             infoIcon.classList.remove('show-tooltip');
         }, 5000);
@@ -244,15 +257,21 @@
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
+        const vendor = vendorInput.value.trim();
         const scormName = scormNameInput.value.trim();
         const scormAnswers = scormAnswersInput.value.trim();
 
-        // Reset error messages
+        vendorError.style.display = 'none';
         scormNameError.style.display = 'none';
         formatError.style.display = 'none';
         infoIcon.classList.remove('show-tooltip');
 
-        // Validation
+        if (!vendor) {
+            vendorError.style.display = 'block';
+            vendorInput.focus();
+            return;
+        }
+
         if (!scormName) {
             scormNameError.style.display = 'block';
             scormNameInput.focus();
@@ -268,6 +287,7 @@
         }
 
         const formData = new URLSearchParams();
+        formData.append('vendorName', vendor);
         formData.append('scormName', scormName);
         formData.append('scormAnswers', scormAnswers);
 
@@ -277,36 +297,27 @@
             body: formData.toString()
         })
         .then(async response => {
-        const result = await response.json();
+            const result = await response.json();
 
-        if (!response.ok) {
-            throw new Error(result.error || '❌ Server error');
-        }
+            if (!response.ok) {
+                throw new Error(result.error || '❌ Server error');
+            }
 
-        alert(result.message || '✅ Answers saved successfully!');
+            alert(result.message || '✅ Answers saved successfully!');
 
-        const testReportLink = document.getElementById('testReportLink');
-        const scormReportLink = document.getElementById('scormReportLink');
+            document.getElementById('testReportLink').href = '/download/latest-zip';
+            document.getElementById('testReportLink').setAttribute("download", "Test-Automation-Report.zip");
 
-        if (result.testReportPath) {
-            console.log("✅ Showing test report download link");
-            testReportLink.style.display = 'block';
-            testReportLink.href = '/download/latest-zip';
-            testReportLink.setAttribute("download", "Test-Automation-Report.zip");
-        }
+            document.getElementById('scormReportLink').href = '/download/latest-report';
+            document.getElementById('scormReportLink').setAttribute("download", "SCORM-Report.html");
 
-        if (result.scormReportPath) {
-            scormReportLink.href = '/download/latest-report';
-            scormReportLink.style.display = 'block';
-            scormReportLink.setAttribute("download", "SCORM-Report.html");
-        }
-    })
-    .catch(error => {
-        alert(error.message || '❌ Error submitting form');
-        console.error(error);
+            reportBox.style.display = 'block';
+        })
+        .catch(error => {
+            alert(error.message || '❌ Error submitting form');
+            console.error(error);
+        });
     });
-    });
-
 </script>
 </body>
 </html>

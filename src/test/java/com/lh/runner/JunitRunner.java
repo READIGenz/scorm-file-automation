@@ -5,6 +5,7 @@ import com.lh.reportsfreemaker.ReportBuilder;
 import com.lh.xray.Log;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import org.apache.log4j.PropertyConfigurator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -19,11 +20,10 @@ import java.util.Date;
 
 @CucumberOptions(monochrome = true,
         features = "src/test/java/com/lh/features/",
-        dryRun = false,
         glue = {"com.lh.steps"},
 //        tags = "@SCORMTesting",
-//        tags = "@DEKRA",
-        tags = "@IMCExpressSCORM",
+        tags = "@DEKRA",
+//        tags = "@IMCExpress",
         plugin = {"json:target/cucumber.json"})
 public class JunitRunner {
 
@@ -58,6 +58,7 @@ public class JunitRunner {
 
         System.setProperty("log-directory", PropertiesHandler.getLogsFolder());
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss");
+        PropertyConfigurator.configure("src/main/resources/log4j.properties");
         System.setProperty("currenttime", dateFormat.format(new Date()));
         Log.info("Log configuration done. Log Dir:" + PropertiesHandler.getLogsFolder());
 
